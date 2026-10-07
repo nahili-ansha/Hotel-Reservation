@@ -1,69 +1,115 @@
 import os
-from flask import Flask, jsonify, redirect, request, send_from_directory, session
-from pymongo import MongoClient
-from werkzeug.security import check_password_hash
+import sqlite3
 
+from flask import Flask, jsonify, redirect, request, send_from_directory, session
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "cs485-class-demo-key")
+app.secret_key = os.environ.get("SECRET_KEY", "hotel-class-project-key")
 
-# TODO 2 - MONGODB CONNECTION
-# Import MongoClient from pymongo.
-# Connect to mongodb://localhost:27017/
-# Database: coffee_auth
-# Collection: users
-# Create users_collection.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATABASE = os.environ.get("HOTEL_DATABASE", os.path.join(BASE_DIR, "hotel.db"))
 
-client = MongoClient("mongodb://localhost:27017/")
-db = client["coffee_auth"]
-users_collection = db["users"]
+
+def get_database():
+    connection = sqlite3.connect(DATABASE)
+    connection.row_factory = sqlite3.Row
+    return connection
+
+
+def create_demo_users():
+    """Create the users table and two accounts for this class project."""
+    connection = get_database()
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL
+        )
+        """
+    )
+
+    demo_users = [
+        ("Hotel Guest", "user@hotel.local", "User123!", "user"),
+        ("Hotel Manager", "admin@hotel.local", "Admin123!", "admin"),
+    ]
+
+    for name, email, password, role in demo_users:
+        connection.execute(
+            """
+            INSERT OR IGNORE INTO users (name, email, password_hash, role)
+            VALUES (?, ?, ?, ?)
+            """,
+            (name, email, generate_password_hash(password), role),
+        )
+
+    connection.commit()
+    connection.close()
+
+
+# Prepare the database whenever the application starts.
+create_demo_users()
 
 
 @app.get("/")
 def login_page():
-    return send_from_directory(".", "login.html")
+    if session.get("user_id"):
+        return redirect("/dashboard")
+    return send_from_directory(BASE_DIR, "login.html")
+
+
+@app.get("/login.html")
+def old_login_address():
+    return redirect("/")
+
+
+@app.get("/dashboard")
+def dashboard_page():
+    if not session.get("user_id"):
+        return redirect("/")
+    return send_from_directory(BASE_DIR, "index.html")
+
+
+@app.get("/index.html")
+def old_dashboard_address():
+    return redirect("/dashboard")
+
 
 @app.get("/style.css")
 def stylesheet():
-    return send_from_directory(".", "style.css")
+    return send_from_directory(BASE_DIR, "style.css")
+
 
 @app.get("/login.js")
 def login_javascript():
-    return send_from_directory(".", "login.js")
+    return send_from_directory(BASE_DIR, "login.js")
 
-@app.get("/dashboard.js")
+
+@app.get("/app.js")
 def dashboard_javascript():
-    return send_from_directory(".", "dashboard.js")
+    return send_from_directory(BASE_DIR, "app.js")
 
-
-# TODO 3 - POST /api/login
-# Read email and password from JSON.
-# Find the account in MongoDB by email.
-# Make sure active is True.
-# Validate with check_password_hash().
-# Save user_id, name, email, role in session.
-# Return name, email, role as JSON.
 
 @app.post("/api/login")
 def login():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
 
-    email = data.get("email")
-    password = data.get("password")
+    connection = get_database()
+    user = connection.execute(
+        "SELECT * FROM users WHERE email = ?", (email,)
+    ).fetchone()
+    connection.close()
 
-    user = users_collection.find_one({"email": email})
+    if user is None or not check_password_hash(user["password_hash"], password):
+        return jsonify({"error": "Invalid email or password."}), 401
 
-    if not user:
-        return jsonify({"error": "Invalid email or password"}), 401
-
-    if not user.get("active"):
-        return jsonify({"error": "Account is inactive"}), 403
-
-    if not check_password_hash(user["password_hash"], password):
-        return jsonify({"error": "Invalid email or password"}), 401
-
-    session["user_id"] = str(user["_id"])
+    session["user_id"] = user["id"]
     session["name"] = user["name"]
     session["email"] = user["email"]
     session["role"] = user["role"]
@@ -71,64 +117,29 @@ def login():
     return jsonify({
         "name": user["name"],
         "email": user["email"],
-        "role": user["role"]
+        "role": user["role"],
     })
 
 
-# TODO 4 - GET /api/me
-# If not logged in, return 401.
-# Otherwise return name, email, role.
-
 @app.get("/api/me")
 def current_user():
-    if "user_id" not in session:
-        return jsonify({"error": "Not logged in"}), 401
+    if not session.get("user_id"):
+        return jsonify({"error": "Not logged in."}), 401
 
     return jsonify({
         "name": session["name"],
         "email": session["email"],
-        "role": session["role"]
+        "role": session["role"],
     })
 
-
-# TODO 5 - GET /user
-# Require login.
-# Return user.html.
-
-@app.get("/user")
-def user_page():
-    if "user_id" not in session:
-        return redirect("/")
-
-    return send_from_directory(".", "user.html")
-
-
-# TODO 6 - GET /admin
-# Require login.
-# Require session role == "admin".
-# Normal users must receive 403.
-# Return admin.html.
-
-@app.get("/admin")
-def admin_page():
-    if "user_id" not in session:
-        return redirect("/")
-
-    if session.get("role") != "admin":
-        return "403 Forbidden", 403
-
-    return send_from_directory(".", "admin.html")
-
-
-# TODO 7 - POST /api/logout
-# Clear the session and return JSON.
 
 @app.post("/api/logout")
 def logout():
     session.clear()
-    return jsonify({"message": "Logged out"})
+    return jsonify({"message": "Logged out."})
 
 
 if __name__ == "__main__":
-    print("Open: http://localhost:5000")
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", "5050"))
+    print(f"Open http://localhost:{port}")
+    app.run(debug=False, port=port)
