@@ -1,14 +1,25 @@
 import os
 from datetime import date
 
+import mongomock
 from bson import ObjectId
 from flask import Blueprint, jsonify, request, session
 from pymongo import MongoClient
+from pymongo.errors import PyMongoError
 from werkzeug.exceptions import HTTPException
 
 api = Blueprint("api", __name__)
 
-client = MongoClient(os.environ.get("MONGO_URI", "mongodb://127.0.0.1:27017"))
+mongo_uri = os.environ.get("MONGO_URI", "mongodb://127.0.0.1:27017")
+
+# Use a real MongoDB server when one is available. For a simple local class
+# project, fall back to an in-memory database so the app still starts.
+try:
+    client = MongoClient(mongo_uri, serverSelectionTimeoutMS=1000)
+    client.admin.command("ping")
+except PyMongoError:
+    client = mongomock.MongoClient()
+
 db = client[os.environ.get("MONGO_DB_NAME", "hotel_reservation")]
 
 ROOM_FIELDS = ["roomNumber", "type", "price", "capacity"]
@@ -230,4 +241,3 @@ def delete_reservation(reservation_id):
         return problem
     db.reservations.delete_one({"_id": reservation["_id"]})
     return jsonify({"message": "Reservation cancelled"}), 200
-
