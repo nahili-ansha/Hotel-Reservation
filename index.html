@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GrandStay Hotel - Reservations</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header>
+        <nav class="navbar">
+            <a class="site-logo" href="#top">GrandStay Hotel</a>
+            <ul class="nav-links">
+                <li><a href="#reserve">Book a Room</a></li>
+                <li><a href="#rooms">Rooms</a></li>
+                <li><a href="#amenities">Amenities</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main id="top">
+
+        <section class="hero">
+            <h1>Welcome to GrandStay Hotel</h1>
+            <p>Comfortable rooms, friendly staff, and easy online booking.</p>
+            <a class="button" href="#reserve">Make a Reservation</a>
+        </section>
+
+        <div class="container">
+
+            <section class="stats">
+                <div class="stat-card">
+                    <p class="stat-number" id="totalRooms">--</p>
+                    <p class="stat-label">Total Rooms</p>
+                </div>
+                <div class="stat-card">
+                    <p class="stat-number" id="availableRooms">--</p>
+                    <p class="stat-label">Available Rooms</p>
+                </div>
+                <div class="stat-card">
+                    <p class="stat-number" id="occupiedRooms">--</p>
+                    <p class="stat-label">Occupied Rooms</p>
+                </div>
+                <div class="stat-card">
+                    <p class="stat-number" id="totalGuests">--</p>
+                    <p class="stat-label">Current Guests</p>
+                </div>
+            </section>
+
+            <div class="main-content">
+
+                <section class="card" id="reserve">
+                    <h2>Book a Room</h2>
+
+                    <form id="reservationForm">
+                        <label for="guestName">Guest Name</label>
+                        <input id="guestName" type="text" placeholder="Your full name" required>
+
+                        <label for="guestEmail">Email</label>
+                        <input id="guestEmail" type="email" placeholder="you@example.com" required>
+
+                        <label for="roomType">Room Type</label>
+                        <select id="roomType" required>
+                            <option value="">-- Choose a room --</option>
+                            <option value="Standard">Standard Room</option>
+                            <option value="Deluxe">Deluxe Room</option>
+                            <option value="Suite">Executive Suite</option>
+                            <option value="Family">Family Room</option>
+                        </select>
+
+                        <label for="guestCount">Number of Guests</label>
+                        <input id="guestCount" type="number" min="1" max="8" value="1" required>
+
+                        <div class="date-row">
+                            <div>
+                                <label for="checkInDate">Check-in Date</label>
+                                <input id="checkInDate" type="date" required>
+                            </div>
+                            <div>
+                                <label for="checkOutDate">Check-out Date</label>
+                                <input id="checkOutDate" type="date" required>
+                            </div>
+                        </div>
+
+                        <button class="button" type="submit">Reserve Room</button>
+                    </form>
+
+                    <div id="message" class="message"></div>
+                </section>
+
+                <section class="card" id="rooms">
+                    <div class="table-header">
+                        <h2>Rooms</h2>
+                        <button id="reloadRooms" class="button button-small" type="button">Refresh</button>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Room</th>
+                                    <th>Type</th>
+                                    <th>Guests</th>
+                                    <th>Price / Night</th>
+                                    <th>Status</th>
+                                    <th>Guest</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="roomTableBody">
+                                <tr>
+                                    <td colspan="7" class="empty-state">No rooms loaded yet. Click Refresh.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+            </div>
+
+            <section id="amenities">
+                <h2>Hotel Amenities</h2>
+                <div class="amenities">
+                    <div class="card">
+                        <h3>Free Breakfast</h3>
+                        <p>Hot breakfast is served every morning from 7 to 10 AM.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Pool and Gym</h3>
+                        <p>Our indoor pool and fitness room are open all day.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Free Wi-Fi</h3>
+                        <p>Fast wireless internet is available in every room.</p>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 GrandStay Hotel. All rights reserved.</p>
+        <p>123 Main Street, Anytown | (555) 123-4567</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
