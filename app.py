@@ -3,10 +3,14 @@ from flask import Flask, jsonify, redirect, request, send_from_directory, sessio
 from pymongo import MongoClient
 from werkzeug.security import check_password_hash
 
+from api_server import api
+
 
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "cs485-class-demo-key")
+app.json.sort_keys = False
+app.register_blueprint(api, url_prefix="/api")
 
 # TODO 2 - MONGODB CONNECTION
 # Import MongoClient from pymongo.
@@ -32,6 +36,10 @@ def stylesheet():
 def login_javascript():
     return send_from_directory(".", "login.js")
 
+@app.get("/app.js")
+def app_javascript():
+    return send_from_directory(".", "app.js")
+
 @app.get("/dashboard.js")
 def dashboard_javascript():
     return send_from_directory(".", "dashboard.js")
@@ -47,14 +55,14 @@ def dashboard_javascript():
 
 @app.post("/api/login")
 def login():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
 
     email = data.get("email")
     password = data.get("password")
 
     user = users_collection.find_one({"email": email})
 
-    if not user:
+    if not email or not password or not user:
         return jsonify({"error": "Invalid email or password"}), 401
 
     if not user.get("active"):
@@ -100,7 +108,7 @@ def user_page():
     if "user_id" not in session:
         return redirect("/")
 
-    return send_from_directory(".", "user.html")
+    return send_from_directory(".", "index.html")
 
 
 # TODO 6 - GET /admin
@@ -117,7 +125,7 @@ def admin_page():
     if session.get("role") != "admin":
         return "403 Forbidden", 403
 
-    return send_from_directory(".", "admin.html")
+    return send_from_directory(".", "index.html")
 
 
 # TODO 7 - POST /api/logout
