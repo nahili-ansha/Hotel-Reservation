@@ -1,37 +1,24 @@
 import os
-import sqlite3
 
 from flask import Flask, jsonify, redirect, request, send_from_directory, session
 from werkzeug.security import check_password_hash, generate_password_hash
 
+# The MongoDB connection (MONGO_URI) is set up in api_server.py.
+from api_server import api, db
+
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "hotel-class-project-key")
+app.json.sort_keys = False
+app.register_blueprint(api, url_prefix="/api")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATABASE = os.environ.get("HOTEL_DATABASE", os.path.join(BASE_DIR, "hotel.db"))
-
-
-def get_database():
-    connection = sqlite3.connect(DATABASE)
-    connection.row_factory = sqlite3.Row
-    return connection
+users_collection = db.users
 
 
 def create_demo_users():
-    """Create the users table and two accounts for this class project."""
-    connection = get_database()
-    connection.execute(
-        """
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            role TEXT NOT NULL
-        )
-        """
-    )
+    """Create two accounts for this class project if they do not exist yet."""
+    users_collection.create_index("email", unique=True)
 
     demo_users = [
         ("Hotel Guest", "user@hotel.local", "User123!", "user"),
@@ -39,16 +26,16 @@ def create_demo_users():
     ]
 
     for name, email, password, role in demo_users:
-        connection.execute(
-            """
-            INSERT OR IGNORE INTO users (name, email, password_hash, role)
-            VALUES (?, ?, ?, ?)
-            """,
-            (name, email, generate_password_hash(password), role),
+        users_collection.update_one(
+            {"email": email},
+            {"$setOnInsert": {
+                "name": name,
+                "email": email,
+                "password_hash": generate_password_hash(password),
+                "role": role,
+            }},
+            upsert=True,
         )
-
-    connection.commit()
-    connection.close()
 
 
 # Prepare the database whenever the application starts.
@@ -100,16 +87,12 @@ def login():
     email = data.get("email", "").strip().lower()
     password = data.get("password", "")
 
-    connection = get_database()
-    user = connection.execute(
-        "SELECT * FROM users WHERE email = ?", (email,)
-    ).fetchone()
-    connection.close()
+    user = users_collection.find_one({"email": email})
 
     if user is None or not check_password_hash(user["password_hash"], password):
         return jsonify({"error": "Invalid email or password."}), 401
 
-    session["user_id"] = user["id"]
+    session["user_id"] = str(user["_id"])
     session["name"] = user["name"]
     session["email"] = user["email"]
     session["role"] = user["role"]
