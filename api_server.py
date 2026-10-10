@@ -22,6 +22,15 @@ except PyMongoError:
 
 db = client[os.environ.get("MONGO_DB_NAME", "hotel_reservation")]
 
+print("DATABASE:", db.name)
+print("CLIENT:", type(client).__module__)
+print("ALL ROOMS:", list(db.rooms.find({}, {
+    "_id": 0
+})))
+print("SUITE ROOMS:", db.rooms.count_documents({
+    "type": "Suite"
+}))
+
 ROOM_FIELDS = ["roomNumber", "type", "price", "capacity"]
 
 
@@ -156,29 +165,60 @@ def delete_room(room_id):
     return jsonify({"message": "Room deleted"}), 200
 
 
+
 @api.post("/reservations")
 def create_reservation():
     if not get_user_id():
         return error("Login required", 401)
+
     data = request.get_json(silent=True) or {}
-    missing = [field for field in ["roomId", "checkIn", "checkOut", "guests"] if field not in data]
+
+    missing = [
+        field for field in
+        ["roomId", "guestName", "guestEmail", "checkIn", "checkOut", "guests"]
+        if not data.get(field)
+    ]
+
     if missing:
         return error(f"Missing fields: {', '.join(missing)}", 400)
+
+    if not isinstance(data["guestName"], str) or not data["guestName"].strip():
+        return error("Valid guest name required", 400)
+
+    if not isinstance(data["guestEmail"], str) or not data["guestEmail"].strip():
+        return error("Valid guest email required", 400)
+
+    if "@" not in data["guestEmail"]:
+        return error("Invalid email address", 400)
+
     room = find_by_id(db.rooms, data["roomId"])
+
     if not room:
         return error("Room not found", 404)
-    problem = check_booking(room, data["checkIn"], data["checkOut"], data["guests"])
+
+    problem = check_booking(
+        room,
+        data["checkIn"],
+        data["checkOut"],
+        data["guests"]
+    )
+
     if problem:
         return problem
+
     reservation = {
         "userId": get_user_id(),
+        "guestName": data["guestName"].strip(),
+        "guestEmail": data["guestEmail"].strip(),
         "roomId": room["_id"],
         "checkIn": data["checkIn"],
         "checkOut": data["checkOut"],
         "guests": data["guests"],
         "status": "booked",
     }
+
     db.reservations.insert_one(reservation)
+
     return jsonify(to_json(reservation)), 201
 
 
@@ -241,3 +281,37 @@ def delete_reservation(reservation_id):
         return problem
     db.reservations.delete_one({"_id": reservation["_id"]})
     return jsonify({"message": "Reservation cancelled"}), 200
+
+
+
+@api.get("/stats")
+def get_stats():
+    today = date.today().isoformat()
+
+    total_rooms = db.rooms.count_documents({})
+
+    active_reservations = list(db.reservations.find({
+        "status": "booked",
+        "checkIn": {"$lte": today},
+        "checkOut": {"$gt": today}
+    }))
+
+    occupied_room_ids = {
+        reservation["roomId"]
+        for reservation in active_reservations
+    }
+
+    occupied_rooms = len(occupied_room_ids)
+    available_rooms = total_rooms - occupied_rooms
+
+    total_guests = sum(
+        reservation["guests"]
+        for reservation in active_reservations
+    )
+
+    return jsonify({
+        "totalRooms": total_rooms,
+        "availableRooms": available_rooms,
+        "occupiedRooms": occupied_rooms,
+        "totalGuests": total_guests
+    }), 200

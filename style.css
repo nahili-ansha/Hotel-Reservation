@@ -94,18 +94,23 @@ h3 {
 }
 
 .hero {
-    background-color: #ffffff;
-    border-bottom: 1px solid #dddddd;
+    background-image:
+        linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)),
+        url("/images/top.png");
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    min-height: 350px;
+    padding: 70px 20px;
     text-align: center;
-    padding: 50px 20px;
+    color: white;
 }
 
-.hero h1 {
-    color: #1f3a5f;
-}
-
+.hero h1,
 .hero p {
-    margin-bottom: 25px;
+    color: white;
 }
 
 .button {
@@ -304,6 +309,39 @@ tbody tr:nth-child(even) {
 
 .amenities p {
     margin: 0;
+}
+
+.amenities .card {
+    padding: 0;
+    overflow: hidden;
+}
+
+.amenities .card h3 {
+    margin: 15px 15px 8px;
+}
+
+.amenities .card p {
+    margin: 0 15px 20px;
+}
+
+.amenity-image {
+    width: 100%;
+    height: 180px;
+    background-image: url("/images/bottom.png");
+    background-repeat: no-repeat;
+    background-size: 300% 100%;
+}
+
+.breakfast-image {
+    background-position: left center;
+}
+
+.pool-image {
+    background-position: center center;
+}
+
+.wifi-image {
+    background-position: right center;
 }
 
 footer {

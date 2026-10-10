@@ -26,7 +26,7 @@ form.addEventListener("submit", async event => {
             return;
         }
 
-        window.location.href = "/dashboard";
+        window.location.href = "/";
     } catch (error) {
         message.textContent = "Unable to connect to the server.";
     } finally {

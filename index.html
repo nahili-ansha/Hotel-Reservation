@@ -17,8 +17,9 @@
                 <li><a href="#rooms">Rooms</a></li>
                 <li><a href="#amenities">Amenities</a></li>
                 <li class="account-area">
-                    <span id="currentUser">Loading...</span>
-                    <button id="logoutButton" class="logout-button" type="button">Logout</button>
+                    <span id="currentUser"></span>
+                    <a id="loginLink" href="/login">Login</a>
+                    <button id="logoutButton" class="logout-button" type="button" hidden>Logout</button>
                 </li>
             </ul>
         </nav>
@@ -124,26 +125,36 @@
 
             </div>
 
+
             <section id="amenities">
                 <h2>Hotel Amenities</h2>
+            
                 <div class="amenities">
+                
+                    <!-- Breakfast -->
                     <div class="card">
+                        <div class="amenity-image breakfast-image"></div>
                         <h3>Free Breakfast</h3>
                         <p>Hot breakfast is served every morning from 7 to 10 AM.</p>
                     </div>
+                
+                    <!-- Pool and Gym -->
                     <div class="card">
+                        <div class="amenity-image pool-image"></div>
                         <h3>Pool and Gym</h3>
                         <p>Our indoor pool and fitness room are open all day.</p>
                     </div>
+                
+                    <!-- Wi-Fi -->
                     <div class="card">
+                        <div class="amenity-image wifi-image"></div>
                         <h3>Free Wi-Fi</h3>
                         <p>Fast wireless internet is available in every room.</p>
                     </div>
+                
                 </div>
             </section>
 
-        </div>
-    </main>
 
     <footer>
         <p>&copy; 2026 GrandStay Hotel. All rights reserved.</p>

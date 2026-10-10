@@ -38,32 +38,24 @@ def create_demo_users():
         )
 
 
-# Prepare the database whenever the application starts.
-create_demo_users()
-
-
 @app.get("/")
+def home_page():
+    return send_from_directory(BASE_DIR, "index.html")
+
+
+@app.get("/login")
 def login_page():
-    if session.get("user_id"):
-        return redirect("/dashboard")
     return send_from_directory(BASE_DIR, "login.html")
 
 
 @app.get("/login.html")
-def old_login_address():
-    return redirect("/")
-
-
-@app.get("/dashboard")
-def dashboard_page():
-    if not session.get("user_id"):
-        return redirect("/")
-    return send_from_directory(BASE_DIR, "index.html")
+def login_html():
+    return redirect("/login")
 
 
 @app.get("/index.html")
-def old_dashboard_address():
-    return redirect("/dashboard")
+def index_html():
+    return redirect("/")
 
 
 @app.get("/style.css")
@@ -80,6 +72,12 @@ def login_javascript():
 def dashboard_javascript():
     return send_from_directory(BASE_DIR, "app.js")
 
+@app.get("/images/<path:filename>")
+def serve_images(filename):
+    return send_from_directory(
+        os.path.join(BASE_DIR, "images"),
+        filename
+    )
 
 @app.post("/api/login")
 def login():
@@ -126,3 +124,4 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5050"))
     print(f"Open http://localhost:{port}")
     app.run(debug=False, port=port)
+
